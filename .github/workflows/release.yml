@@ -3,8 +3,6 @@ name: release
 on:
   push:
     branches: ['master']
-    tags: 
-      - 'v*'
     paths-ignore:
       - 'README.md'
       - '.gitignore'
@@ -48,9 +46,9 @@ jobs:
           docker save -o mini.tar $mini_image_id
           tar xvf mini.tar
           cat manifest.json
-          tar xvf $(sed 's/","/\n/g' manifest.json | sed 's/"]}/\n/g' | tail -r | sed -n "2,2p")
-          tar xvf $(sed 's/","/\n/g' manifest.json | sed 's/"]}/\n/g' | tail -r | sed -n "3,3p")
-          tar xvf $(sed 's/","/\n/g' manifest.json | sed 's/"]}/\n/g' | tail -r | sed -n "4,4p" | sed 's/^\(.*\)\"//g')
+          tar xvf $(sed 's/","/\n/g' manifest.json | sed 's/"]}/\n/g' | tac | sed -n "2,2p")
+          tar xvf $(sed 's/","/\n/g' manifest.json | sed 's/"]}/\n/g' | tac | sed -n "3,3p")
+          tar xvf $(sed 's/","/\n/g' manifest.json | sed 's/"]}/\n/g' | tac | sed -n "4,4p" | sed 's/^\(.*\)\"//g')
       - name: Release
         env:
          GH_TOKEN: ${{ github.token }}
