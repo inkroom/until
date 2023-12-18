@@ -2,7 +2,7 @@
 
 
 ```
-重试命令直到满足条件，支持linux和windows
+重试命令直到满足条件，支持linux和windows以及macos
 ```
 
 

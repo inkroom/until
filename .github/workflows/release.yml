@@ -1,0 +1,58 @@
+name: release
+
+on:
+  push:
+    branches: ['master']
+    tags: 
+      - 'v*'
+    paths-ignore:
+      - 'README.md'
+      - '.gitignore'
+  workflow_dispatch:
+jobs:
+  docker: 
+    runs-on: ubuntu-20.04
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Version
+        id: v
+        run: |
+          v=$(date +%Y%m%d)
+          echo "ve=$v" >> $GITHUB_OUTPUT
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        id: mini_image_id
+        with:
+          context: .
+          load: true
+          push: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Extract Docker Image
+        id: ex
+        run: |
+          docker images
+          mini_image_id="${{ steps.mini_image_id.outputs.imageid }}"
+          mini_image_id=${mini_image_id:7}
+          mkdir mini
+          cd mini
+          docker save -o mini.tar $mini_image_id
+          tar xvf mini.tar
+          cat manifest.json
+          tar xvf $(sed 's/","/\n/g' manifest.json | sed 's/"]}/\n/g' | tail -r | sed -n "2,2p")
+          tar xvf $(sed 's/","/\n/g' manifest.json | sed 's/"]}/\n/g' | tail -r | sed -n "3,3p")
+          tar xvf $(sed 's/","/\n/g' manifest.json | sed 's/"]}/\n/g' | tail -r | sed -n "4,4p" | sed 's/^\(.*\)\"//g')
+      - name: Release
+        env:
+         GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create --target master $(date +%Y%m%d) ./mini/app/*
