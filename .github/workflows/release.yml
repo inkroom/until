@@ -55,7 +55,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Rust
-        uses: actions-rs/toolchain@v1
+        uses: brndnmtthws/rust-action-rustup@v1
         with:
          toolchain: 1.74.1
          override: true
@@ -68,7 +68,8 @@ jobs:
            name: app
            path: target/release/until
   release:
-    runs-on: ubuntu:20.04
+    runs-on: ubuntu-20.04
+    needs: ["mac","docker"]
     permissions:
         contents: write
         packages: write
