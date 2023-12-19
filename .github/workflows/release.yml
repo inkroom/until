@@ -55,9 +55,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Rust
-        uses: moonrepo/setup-rust@v1
+        uses: brndnmtthws/rust-action-rustup@v1
         with:
-         channel: 1.74.1
+         toolchain: 1.74.1
       - name: Build
         run: |
          cargo build --release
