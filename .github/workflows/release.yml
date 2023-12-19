@@ -89,6 +89,7 @@ jobs:
           env:
             GH_TOKEN: ${{ github.token }}
           run: |
-            body=$(curl -s "https://api.github.com/repos/inkroom/until/releases/latest" | grep "body" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
-            gh release create -n "$body" --target master $(date +%Y%m%d) ./app/*
+            body=$(curl -s "https://api.github.com/repos/inkroom/until/releases/latest" | grep "body" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g;s/\\\\/\\/g')
+            echo -e $body > t.log
+            gh release create -F t.log --target master $(date +%Y%m%d) ./app/*
   
