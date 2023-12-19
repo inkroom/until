@@ -1,11 +1,11 @@
-FROM inkbox/rust as w
+FROM inkbox/rust:1.74.1 as w
 #FROM ghcr.io/inkbox/rust as w
 WORKDIR /app
 COPY . /app
 
 RUN cargo build --release && RUSTFLAGS="-C target-feature=+crt-static" cargo build --release --target x86_64-pc-windows-gnu
 
-FROM ghcr.m.daocloud.io/inkroomtemp/rust_musl_build as m
+FROM ghcr.m.daocloud.io/inkroomtemp/rust_musl_build:1.74.1 as m
 #FROM registry.gitlab.com/rust_musl_docker/image:stable-latest as m
 WORKDIR /app
 RUN rustup target add aarch64-apple-darwin && rustup target add aarch64-unknown-linux-musl

@@ -6,21 +6,15 @@ on:
     paths-ignore:
       - 'README.md'
       - '.gitignore'
+      - '.dockerignore'
+      - 'build.sh'
   workflow_dispatch:
 jobs:
   docker: 
     runs-on: ubuntu-20.04
-    permissions:
-      contents: write
-      packages: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-      - name: Version
-        id: v
-        run: |
-          v=$(date +%Y%m%d)
-          echo "ve=$v" >> $GITHUB_OUTPUT
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
@@ -49,8 +43,51 @@ jobs:
           tar xvf $(sed 's/","/\n/g' manifest.json | sed 's/"]}/\n/g' | tac | sed -n "2,2p")
           tar xvf $(sed 's/","/\n/g' manifest.json | sed 's/"]}/\n/g' | tac | sed -n "3,3p")
           tar xvf $(sed 's/","/\n/g' manifest.json | sed 's/"]}/\n/g' | tac | sed -n "4,4p" | sed 's/^\(.*\)\"//g')
-      - name: Release
-        env:
-         GH_TOKEN: ${{ github.token }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: app
+          path: mini/app/*
+  mac: 
+    runs-on: macos-12
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Rust
+        uses: actions-rs/toolchain@v1
+        with:
+         toolchain: 1.74.1
+         override: true
+      - name: Build
         run: |
-          gh release create --target master $(date +%Y%m%d) ./mini/app/*
+         cargo build --release
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+           name: app
+           path: target/release/until
+  release:
+    runs-on: ubuntu:20.04
+    permissions:
+        contents: write
+        packages: write
+    steps:
+        - name: Checkout repository
+          uses: actions/checkout@v3
+        - name: Download artifacts
+          uses: actions/download-artifact@v3
+          with:
+            name: app
+            path: app/
+        - name: Download Mac M2
+          run: |
+            tag=$(curl -s "https://api.github.com/repos/inkroom/until/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
+            wget "https://github.com/inkroom/until/releases/download/$tag/until_mac_m2"
+            mv until_mac_m2 ./app/
+        - name: Release
+          env:
+            GH_TOKEN: ${{ github.token }}
+          run: |
+            gh release create --target master $(date +%Y%m%d) ./app/*
+  

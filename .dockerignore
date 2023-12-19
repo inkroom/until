@@ -2,3 +2,4 @@ target/
 out/
 temp/
 Dockerfile
+build.sh
