@@ -14,17 +14,30 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
       - name: Build Docker image
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         id: mini_image_id
         with:
           context: .
+          file: .github/workflows/Dockerfile
           load: true
+          push: false
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        id: arm_image_id
+        with:
+          context: .
+          file: .github/workflows/Dockerfile
+          load: true
+          platforms: linux/arm/v8
           push: false
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache-from: type=gha
@@ -32,64 +45,91 @@ jobs:
       - name: Extract Docker Image
         id: ex
         run: |
+          sed -ex
           docker images
           mini_image_id="${{ steps.mini_image_id.outputs.imageid }}"
           mini_image_id=${mini_image_id:7}
           mkdir mini
+          mkdir out
           cd mini
           docker save -o mini.tar $mini_image_id
           tar xvf mini.tar
           cat manifest.json
-          tar xvf $(sed 's/","/\n/g' manifest.json | sed 's/"]}/\n/g' | tac | sed -n "2,2p")
-          tar xvf $(sed 's/","/\n/g' manifest.json | sed 's/"]}/\n/g' | tac | sed -n "3,3p")
-          tar xvf $(sed 's/","/\n/g' manifest.json | sed 's/"]}/\n/g' | tac | sed -n "4,4p" | sed 's/^\(.*\)\"//g')
+          tar xvf $(jq --raw-output '.[0].Layers[0]' manifest.json)
+          tar xvf $(jq --raw-output '.[0].Layers[1]' manifest.json)
+          cp ./app/* ../out
+
+          cd ../
+          arm_image_id="${{ steps.arm_image_id.outputs.imageid }}"
+          arm_image_id=${arm_image_id:7}
+          mkdir arm
+          cd arm
+          docker save -o mini.tar $arm_image_id
+          tar xvf mini.tar
+          cat manifest.json
+          tar xvf $(jq --raw-output '.[0].Layers[0]' manifest.json)
+          tar xvf $(jq --raw-output '.[0].Layers[1]' manifest.json)
+          mv ./app/until ../out/until-arm
+          mv ./app/until-dyn ../out/until-dyn-linux-arm
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: app
-          path: mini/app/*
+          name: app-linux
+          path: out/*
   mac: 
     runs-on: macos-12
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Rust
         uses: brndnmtthws/rust-action-rustup@v1
         with:
          toolchain: 1.74.1
       - name: Build
         run: |
-         cargo build --release && mv target/release/until ./until_mac
+          cargo build --release && mv target/release/until ./until-mac
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-           name: app
-           path: until_mac
+           name: app-mac
+           path: until-mac
+  arm:
+    runs-on: macos-14
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Rust
+        uses: brndnmtthws/rust-action-rustup@v1
+        with:
+         toolchain: 1.74.1
+      - name: Build
+        run: |
+          mkdir out
+          cargo build --release && mv target/release/until ./out/until-mac-arm
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+           name: app-mac-arm
+           path: out/*
   release:
     runs-on: ubuntu-20.04
-    needs: ["mac","docker"]
+    needs: ["mac","docker","arm"]
     permissions:
         contents: write
         packages: write
     steps:
         - name: Checkout repository
-          uses: actions/checkout@v3
+          uses: actions/checkout@v4
         - name: Download artifacts
-          uses: actions/download-artifact@v3
+          uses: actions/download-artifact@v4
           with:
-            name: app
+            merge-multiple: true
+            pattern: app-*
             path: app/
-        - name: Download Mac M2
-          run: |
-            tag=$(curl -s "https://api.github.com/repos/inkroom/until/releases/latest" | grep "tag_name" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/ //g')
-            wget "https://github.com/inkroom/until/releases/download/$tag/until_mac_m2"
-            mv until_mac_m2 ./app/
         - name: Release
           env:
             GH_TOKEN: ${{ github.token }}
           run: |
-            body=$(curl -s "https://api.github.com/repos/inkroom/until/releases/latest" | grep "body" | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//g;s/\\\\/\\/g')
-            echo -e $body > t.log
-            gh release create -F t.log --target master $(date +%Y%m%d) ./app/*
+            gh release create -F CHANGELOG --target master $(date +%Y%m%d) ./app/*
   
