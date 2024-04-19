@@ -85,8 +85,8 @@ jobs:
           cat manifest.json
           tar xvf $(jq --raw-output '.[0].Layers[0]' manifest.json)
           tar xvf $(jq --raw-output '.[0].Layers[1]' manifest.json)
-          mv app/until app/until-linux-arm
-          mv app/until-dyn app/until-dyn-linux-arm
+          mv app/un app/un-linux-arm
+          mv app/un-dyn app/un-dyn-linux-arm
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -104,12 +104,12 @@ jobs:
          toolchain: ${{ env.RUST_VERSION }}
       - name: Build
         run: |
-          cargo build --release && mv target/release/until ./until-mac
+          cargo build --release && mv target/release/un ./un-mac
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
            name: app-mac
-           path: until-mac
+           path: un-mac
   mac-m1:
     runs-on: macos-14
     steps:
@@ -122,7 +122,7 @@ jobs:
       - name: Build
         run: |
           mkdir out
-          cargo build --release && mv target/release/until ./out/until-mac-arm
+          cargo build --release && mv target/release/un ./out/un-mac-arm
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:

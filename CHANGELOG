@@ -1,7 +1,7 @@
-- until —— linux-amd64-static 静态编译，使用musl
-- until-arm —— linux arm架构静态编译
-- until-dyn —— linux-amd64-dyn 动态编译
-- until-dyn-linux-arm —— linux arm架构动态编译
-- until-mac —— mac intel架构，actions编译
-- until-mac-arm —— mac m1架构下编译
-- until.exe —— windows静态编译
+- un —— linux-amd64-static 静态编译，使用musl
+- un-dyn —— linux-amd64-dyn 动态编译
+- un-dyn-linux-arm —— linux arm架构动态编译
+- un-linux-arm —— linux arm架构静态编译
+- un-mac —— mac intel架构，actions编译
+- un-mac-arm —— mac m1架构下编译
+- un.exe —— windows静态编译

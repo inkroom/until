@@ -1,5 +1,5 @@
 [package]
-name = "until"
+name = "un"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,7 +10,7 @@ random = "0.14.0"
 
 [[bin]]
 
-name = "until"
+name = "un"
 
 path = "src/main.rs"
 
