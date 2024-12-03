@@ -16,7 +16,7 @@ fn main() {
 
     let mut args: Vec<String> = env::args().collect();
     args.remove(0); // 第一个是程序自己，需要去除，不然就会反复启动自己，直接把cpu拉满
-    if args.is_empty() == 0 {
+    if args.is_empty() {
         println!("until --max 10 --code 0");
         return;
     }
